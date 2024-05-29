@@ -13,6 +13,8 @@ const server = prerender({
   ],
   logRequests: true,
   logErrors: true,
+  pageLoadTimeout: 20000, // Increase timeout to 20 seconds
+  waitAfterLastRequest: 1000, // Wait for 1 second after the last request
   port: process.env.PORT || 3000
 });
 
@@ -34,6 +36,11 @@ server.use({
                        req.prerender.document.querySelector('meta[property="og:description"]') &&
                        req.prerender.document.querySelector('meta[property="og:image"]');
     return isPageDone;
+  },
+  beforeSend: (req, res, next) => {
+    const title = req.prerender.document.querySelector('title').textContent;
+    console.log(`Page title: ${title}`);
+    next();
   },
   failedRequest: (req, res, next) => {
     console.error(`Request failed: ${req.prerender.url}`);
