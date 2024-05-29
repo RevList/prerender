@@ -10,7 +10,9 @@ const server = prerender({
     '--disable-gpu',
     '--remote-debugging-port=9222',
     '--hide-scrollbars',
-    '--disable-software-rasterizer'
+    '--disable-software-rasterizer',
+    '--disable-web-security',
+    '--disable-features=IsolateOrigins,site-per-process' // Disabling web security and origin isolation
   ],
   logRequests: true,
   logErrors: true,
