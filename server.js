@@ -1,5 +1,6 @@
 const prerender = require('prerender');
 const redisCache = require('prerender-redis-cache');
+const redis = require('redis');
 
 const server = prerender({
   chromeLocation: '/usr/bin/google-chrome-stable',
@@ -16,7 +17,16 @@ const server = prerender({
   port: process.env.PORT || 3000
 });
 
-server.use(redisCache);
+const redisClient = redis.createClient({
+  host: 'monorail.proxy.rlwy.net',
+  port: 33416,
+  password: 'fWJBdarXQJcyinfblQYTywbQOSeTbjzP'
+});
+
+server.use(redisCache({
+  redisClient: redisClient,
+  expire: 60 * 60 * 24 // Cache expiration time in seconds (24 hours)
+}));
 
 server.use(prerender.sendPrerenderHeader());
 server.use(prerender.blockResources());

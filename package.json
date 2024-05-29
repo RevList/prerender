@@ -14,9 +14,11 @@
     "compression": "^1.7.4",
     "express": "^4.17.1",
     "he": "^1.2.0",
+    "prerender": "^5.21.1",
+    "prerender-redis-cache": "^0.2.2",
+    "redis": "^4.6.14",
     "uuid": "^8.3.2",
-    "valid-url": "^1.0.9",
-    "prerender": "^5.21.1"
+    "valid-url": "^1.0.9"
   },
   "devDependencies": {
     "mocha": "^8.4.0",
