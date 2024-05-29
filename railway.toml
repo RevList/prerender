@@ -1,0 +1,3 @@
+[service]
+name = "prerender"
+memory = 512 # Allocate 512MB of memory
