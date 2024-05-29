@@ -79,7 +79,7 @@ server.use({
     return isPageDone || req.prerender.document.readyState === 'complete';
   },
   beforeSend: (req, res, next) => {
-    const title = req.prerender.document.querySelector('title').textContent;
+    const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
     console.log(`Page title: ${title}`);
     next();
   },
