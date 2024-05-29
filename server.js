@@ -65,20 +65,29 @@ server.use({
           document.querySelector('meta[property="og:description"]') &&
           document.querySelector('meta[property="og:image"]')
         );
-      }, { timeout: 10000 });
+      }, { timeout: 20000 }); // Increase timeout to 20 seconds
+      console.log('Meta tags found');
       next();
     } catch (err) {
-      console.error('Meta tags not found within 10 seconds:', err);
+      console.error('Meta tags not found within 20 seconds:', err);
       next();
     }
   },
   pageDoneCheck: (req, res) => {
+    if (!req.prerender.document) {
+      console.error('Document is not defined');
+      return false;
+    }
     const isPageDone = req.prerender.document.querySelector('meta[property="og:title"]') &&
                        req.prerender.document.querySelector('meta[property="og:description"]') &&
                        req.prerender.document.querySelector('meta[property="og:image"]');
     return isPageDone || req.prerender.document.readyState === 'complete';
   },
   beforeSend: (req, res, next) => {
+    if (!req.prerender.document) {
+      console.error('Document is not defined in beforeSend');
+      return next();
+    }
     const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
     console.log(`Page title: ${title}`);
     next();
