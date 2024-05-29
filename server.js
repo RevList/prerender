@@ -1,6 +1,5 @@
 const prerender = require('prerender');
 const redisCache = require('prerender-redis-cache');
-const redis = require('redis');
 
 const server = prerender({
   chromeLocation: '/usr/bin/google-chrome-stable',
@@ -17,16 +16,7 @@ const server = prerender({
   port: process.env.PORT || 3000
 });
 
-const redisClient = redis.createClient({
-  host: 'monorail.proxy.rlwy.net',
-  port: 33416,
-  password: 'fWJBdarXQJcyinfblQYTywbQOSeTbjzP'
-});
-
-server.use(redisCache({
-  redisClient: redisClient,
-  expire: 60 * 60 * 24 // Cache expiration time in seconds (24 hours)
-}));
+server.use(redisCache);
 
 // Middleware to add a delay and check for meta tags
 server.use({
