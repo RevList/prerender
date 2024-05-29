@@ -43,22 +43,38 @@ redisClient.on('error', (err) => {
 
 server.use(redisCache);
 
+server.use(prerender.sendPrerenderHeader());
+server.use(prerender.blockResources());
+server.use(prerender.removeScriptTags());
+server.use(prerender.httpHeaders());
+server.use(prerender.addMetaTags());
+
 // Middleware to add a delay and check for meta tags
 server.use({
   requestReceived: (req, res, next) => {
-    // console.log(`Request received: ${req.prerender.url}`);
+    console.log(`Request received: ${req.prerender.url}`);
     next();
   },
-  pageLoaded: (req, res, next) => {
-    setTimeout(() => {
+  pageLoaded: async (req, res, next) => {
+    try {
+      await req.prerender.page.waitForFunction(() => {
+        return (
+          document.querySelector('meta[property="og:title"]') &&
+          document.querySelector('meta[property="og:description"]') &&
+          document.querySelector('meta[property="og:image"]')
+        );
+      }, { timeout: 10000 });
       next();
-    }, 10000); // Wait for 5 seconds
+    } catch (err) {
+      console.error('Meta tags not found within 10 seconds:', err);
+      next();
+    }
   },
   pageDoneCheck: (req, res) => {
     const isPageDone = req.prerender.document.querySelector('meta[property="og:title"]') &&
                        req.prerender.document.querySelector('meta[property="og:description"]') &&
                        req.prerender.document.querySelector('meta[property="og:image"]');
-    return isPageDone;
+    return isPageDone || req.prerender.document.readyState === 'complete';
   },
   beforeSend: (req, res, next) => {
     const title = req.prerender.document.querySelector('title').textContent;
@@ -66,15 +82,9 @@ server.use({
     next();
   },
   failedRequest: (req, res, next) => {
-    // console.error(`Request failed: ${req.prerender.url}`);
+    console.error(`Request failed: ${req.prerender.url}`);
     next();
   }
 });
-
-server.use(prerender.sendPrerenderHeader());
-server.use(prerender.blockResources());
-server.use(prerender.removeScriptTags());
-server.use(prerender.httpHeaders());
-server.use(prerender.addMetaTags());
 
 server.start();
