@@ -21,12 +21,20 @@ server.use(prerender.removeScriptTags());
 server.use(prerender.httpHeaders());
 server.use(prerender.addMetaTags());
 
-server.on('pageLoaded', (req, res) => {
-  console.log(`Page loaded: ${req.prerender.url}`);
-});
-
-server.on('failedRequest', (req, res) => {
-  console.error(`Request failed: ${req.prerender.url}`);
+// Middleware to log requests
+server.use({
+  requestReceived: (req, res, next) => {
+    console.log(`Request received: ${req.prerender.url}`);
+    next();
+  },
+  pageLoaded: (req, res, next) => {
+    console.log(`Page loaded: ${req.prerender.url}`);
+    next();
+  },
+  failedRequest: (req, res, next) => {
+    console.error(`Request failed: ${req.prerender.url}`);
+    next();
+  }
 });
 
 server.start();
