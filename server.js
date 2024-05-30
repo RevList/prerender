@@ -59,18 +59,16 @@ if (process.env.DEBUG_PAGES) {
 
 server.use({
 	pageLoaded: async (req, res, next) => {
-	  try {
-		console.log('Waiting for `prerenderReady` flag...');
-		await req.prerender.page.waitForFunction(() => {
-		  return window.prerenderReady === true;
-		}, { timeout: 30000 }); // 30 seconds timeout
-  
-		console.log('`prerenderReady` flag is set.');
-		next();
-	  } catch (err) {
-		console.error('Error waiting for `prerenderReady` flag:', err);
-		next();
-	  }
+		try {
+			console.log('Waiting for `prerenderReady` flag...');
+			await req.prerender.page.waitForFunction('window.prerenderReady === true', { timeout: 30000 }); // 30 seconds timeout
+	  
+			console.log('`prerenderReady` flag is set.');
+			next();
+		} catch (err) {
+			console.error('Error waiting for `prerenderReady` flag:', err);
+			next();
+		}
 	},
 	pageDoneCheck: (req, res) => {
 	  return req.prerender.documentReadyState === 'complete';
