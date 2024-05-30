@@ -54,7 +54,7 @@ server.use(prerender.addMetaTags());
 // Middleware to add a delay and check for meta tags
 server.use({
   requestReceived: (req, res, next) => {
-    console.log(`Request received: ${req.prerender.url}`);
+    // console.log(`Request received: ${req.prerender.url}`);
     next();
   },
   pageLoaded: async (req, res, next) => {
@@ -103,7 +103,7 @@ server.use({
     next();
   },
   failedRequest: (req, res, next) => {
-    console.error(`Request failed: ${req.prerender.url}`);
+    // console.error(`Request failed: ${req.prerender.url}`);
     next();
   }
 });
@@ -111,7 +111,7 @@ server.use({
 server.start({
   server: {
     headers: {
-      size: '2MB' // Increase header size limit to 2MB
+      size: '5MB' // Increase header size limit to 2MB
     }
   }
 });
