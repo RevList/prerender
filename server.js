@@ -65,11 +65,12 @@ server.use({
           document.querySelector('meta[property="og:description"]') &&
           document.querySelector('meta[property="og:image"]')
         );
-      }, { timeout: 20000 }); // Increase timeout to 20 seconds
-      console.log('Meta tags found');
+      }, { timeout: 40000 }); // Increase timeout to 40 seconds
+      await req.prerender.page.waitForNetworkIdle({ idleTime: 1000 });
+      console.log('Meta tags found and network idle');
       next();
     } catch (err) {
-      console.error('Meta tags not found within 20 seconds:', err);
+      console.error('Meta tags not found within 40 seconds:', err);
       next();
     }
   },
