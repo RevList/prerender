@@ -1,8 +1,4 @@
-const prerender = require('prerender');
-
-const forwardHeaders = require('./plugins/forwardHeaders');
-const removePrefetchTags = require('./plugins/removePrefetchTags');
-const log = require('./plugins/log');
+var prerender = require('./lib');
 
 const options = {
 	pageDoneCheckInterval : 500,
@@ -25,13 +21,11 @@ console.log('Starting with options:', options);
 
 const server = prerender(options);
 
-server.use(log);
-server.use(forwardHeaders);
+// server.use(require('prerender-redis-cache'));
 server.use(prerender.blockResources());
 server.use(prerender.removeScriptTags());
-server.use(removePrefetchTags);
-// server.use(require('prerender-redis-cache'));
 server.use(prerender.httpHeaders());
+server.use(prerender.addMetaTags());
 if (process.env.DEBUG_PAGES) {
 	server.use(prerender.logger());
 }
