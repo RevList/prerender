@@ -16,34 +16,34 @@ const server = prerender({
   ],
   logRequests: true,
   logErrors: true,
-  pageLoadTimeout: 30000, // Increase timeout to 20 seconds
-  waitAfterLastRequest: 5000, // Wait for 1 second after the last request
+  pageLoadTimeout: 20000, // Increase timeout to 20 seconds
+  waitAfterLastRequest: 1000, // Wait for 1 second after the last request
   port: process.env.PORT || 3000
 });
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-const redisClient = redis.createClient({
-  url: redisUrl
-});
+// const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+// const redisClient = redis.createClient({
+//   url: redisUrl
+// });
 
-// Check Redis connection and clear cache on start
-redisClient.on('connect', () => {
-  console.log('Connected to Redis');
-  // Clear the Redis cache on server start
-  redisClient.flushdb((err, succeeded) => {
-    if (err) {
-      console.error('Failed to clear Redis cache:', err);
-    } else {
-      console.log('Redis cache cleared:', succeeded);
-    }
-  });
-});
+// // Check Redis connection and clear cache on start
+// redisClient.on('connect', () => {
+//   console.log('Connected to Redis');
+//   // Clear the Redis cache on server start
+//   redisClient.flushdb((err, succeeded) => {
+//     if (err) {
+//       console.error('Failed to clear Redis cache:', err);
+//     } else {
+//       console.log('Redis cache cleared:', succeeded);
+//     }
+//   });
+// });
 
-redisClient.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+// redisClient.on('error', (err) => {
+//   console.error('Redis connection error:', err);
+// });
 
-server.use(redisCache);
+// server.use(redisCache);
 
 server.use(prerender.sendPrerenderHeader());
 server.use(prerender.blockResources());
