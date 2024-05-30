@@ -59,23 +59,22 @@ server.use({
   },
   pageLoaded: async (req, res, next) => {
     try {
-      // Increase timeout for waiting for network idle
+      console.log('Waiting for network to be idle...');
       await req.prerender.page.waitForNetworkIdle({ idleTime: 1000, timeout: 30000 });
-      console.log('Network is idle');
+      console.log('Network is idle.');
 
-      // Check for meta tags after ensuring network is idle
-      const metaTagsFound = await req.prerender.page.evaluate(() => {
-        return (
-          document.querySelector('meta[property="og:title"]') &&
-          document.querySelector('meta[property="og:description"]') &&
-          document.querySelector('meta[property="og:image"]')
-        );
+      const metaTags = await req.prerender.page.evaluate(() => {
+        return {
+          ogTitle: document.querySelector('meta[property="og:title"]')?.content || null,
+          ogDescription: document.querySelector('meta[property="og:description"]')?.content || null,
+          ogImage: document.querySelector('meta[property="og:image"]')?.content || null
+        };
       });
 
-      if (metaTagsFound) {
-        console.log('Meta tags found');
+      if (metaTags.ogTitle && metaTags.ogDescription && metaTags.ogImage) {
+        console.log('Meta tags found:', metaTags);
       } else {
-        console.error('Meta tags not found');
+        console.error('Meta tags not fully found:', metaTags);
       }
 
       next();
@@ -86,7 +85,7 @@ server.use({
   },
   pageDoneCheck: (req, res) => {
     if (!req.prerender.document) {
-      console.error('Document is not defined');
+      console.error('Document is not defined.');
       return false;
     }
     const isPageDone = req.prerender.document.querySelector('meta[property="og:title"]') &&
@@ -96,7 +95,7 @@ server.use({
   },
   beforeSend: (req, res, next) => {
     if (!req.prerender.document) {
-      console.error('Document is not defined in beforeSend');
+      console.error('Document is not defined in beforeSend.');
       return next();
     }
     const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
