@@ -30,23 +30,6 @@ const redisClient = redis.createClient({
   url: redisUrl
 });
 
-// Check Redis connection and clear cache on start
-redisClient.on('connect', () => {
-  console.log('Connected to Redis');
-  // Clear the Redis cache on server start
-  redisClient.flushall((err, succeeded) => {
-    if (succeeded) {
-		console.log('Redis cache cleared:', succeeded);
-    } else {
-		console.error('Failed to clear Redis cache:', err);
-    }
-  });
-});
-
-redisClient.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
-
 server.use(redisCache);
 
 server.use(prerender.sendPrerenderHeader());
