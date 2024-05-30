@@ -1,37 +1,32 @@
-FROM node:14
+FROM node:8.9
 
-# Install dependencies
-RUN apt-get update && apt-get install -y wget gnupg
+EXPOSE 3000
 
-# Install Chrome dependencies
-RUN apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    hicolor-icon-theme \
-    libcanberra-gtk* \
-    libgl1-mesa-dri \
-    libgl1-mesa-glx \
-    libpango1.0-0 \
-    libpulse0 \
-    libv4l-0 \
-    fonts-symbola \
-    --no-install-recommends \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install dumb-init to rape any Chrome zombies
+RUN wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb
+RUN dpkg -i dumb-init_*.deb
 
-# Install Chrome
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-RUN apt-get update && apt-get install -y google-chrome-stable
+# Install Chromium.
+RUN \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /usr/src/app && \
+    mkdir -p /.pm2 /.cache/yarn && \
+    chgrp -R 0 /.pm2 /.cache/yarn && \
+    chmod -R g=u /.pm2 /.cache/yarn
+RUN groupadd -r prerender && useradd -r -g prerender -d /usr/src/app prerender
+RUN chown prerender:prerender /usr/src/app
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-RUN npm install
+COPY yarn.lock /usr/src/app/
+COPY package.json /usr/src/app/
+RUN yarn install
+COPY . /usr/src/app
 
-COPY . .
-
-EXPOSE 3000
-CMD ["npm", "start"]
+CMD [ "dumb-init", "yarn", "prod" ]
