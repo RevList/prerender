@@ -108,4 +108,10 @@ server.use({
   }
 });
 
-server.start();
+server.start({
+  server: {
+    headers: {
+      size: '2MB' // Increase header size limit to 2MB
+    }
+  }
+});
