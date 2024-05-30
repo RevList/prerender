@@ -24,9 +24,8 @@ RUN chown prerender:prerender /usr/src/app
 
 WORKDIR /usr/src/app
 
-COPY yarn.lock /usr/src/app/
 COPY package.json /usr/src/app/
-RUN yarn install
+RUN npm install
 COPY . /usr/src/app
 
 CMD [ "dumb-init", "yarn", "prod" ]
