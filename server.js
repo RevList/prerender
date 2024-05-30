@@ -54,35 +54,35 @@ server.use(prerender.removeScriptTags());
 server.use(prerender.httpHeaders());
 server.use(prerender.addMetaTags());
 
-// server.use({
-// 	pageLoaded: async (req, res, next) => {
-// 		try {
-// 			console.log('Waiting for `prerenderReady` flag...');
-// 			await req.prerender.page.waitForFunction('window.prerenderReady === true', { timeout: 30000 }); // 30 seconds timeout
+server.use({
+	// pageLoaded: async (req, res, next) => {
+	// 	try {
+	// 		console.log('Waiting for `prerenderReady` flag...');
+	// 		await req.prerender.page.waitForFunction('window.prerenderReady === true', { timeout: 30000 }); // 30 seconds timeout
 	  
-// 			console.log('`prerenderReady` flag is set.');
-// 			next();
-// 		} catch (err) {
-// 			console.error('Error waiting for `prerenderReady` flag:', err);
-// 			next();
-// 		}
-// 	},
-// 	pageDoneCheck: (req, res) => {
-// 	  return req.prerender.documentReadyState === 'complete';
-// 	},
-// 	beforeSend: (req, res, next) => {
-// 	  if (!req.prerender.document) {
-// 		console.error('Document is not defined in beforeSend.');
-// 		return next();
-// 	  }
-// 	  const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
-// 	  console.log(`Page title: ${title}`);
-// 	  next();
-// 	},
-// 	failedRequest: (req, res, next) => {
-// 	  console.error(`Request failed: ${req.prerender.url}`);
-// 	  next();
-// 	}
-//   });
+	// 		console.log('`prerenderReady` flag is set.');
+	// 		next();
+	// 	} catch (err) {
+	// 		console.error('Error waiting for `prerenderReady` flag:', err);
+	// 		next();
+	// 	}
+	// },
+	pageDoneCheck: (req, res) => {
+		return req.prerender.documentReadyState === 'complete' && req.prerender.page.evaluate(() => window.prerenderReady);
+	  },
+	beforeSend: (req, res, next) => {
+	  if (!req.prerender.document) {
+		console.error('Document is not defined in beforeSend.');
+		return next();
+	  }
+	  const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
+	  console.log(`Page title: ${title}`);
+	  next();
+	},
+	failedRequest: (req, res, next) => {
+	  console.error(`Request failed: ${req.prerender.url}`);
+	  next();
+	}
+  });
 
 server.start();
