@@ -59,18 +59,28 @@ server.use({
   },
   pageLoaded: async (req, res, next) => {
     try {
-      await req.prerender.page.waitForFunction(() => {
+      // Increase timeout for waiting for network idle
+      await req.prerender.page.waitForNetworkIdle({ idleTime: 1000, timeout: 30000 });
+      console.log('Network is idle');
+
+      // Check for meta tags after ensuring network is idle
+      const metaTagsFound = await req.prerender.page.evaluate(() => {
         return (
           document.querySelector('meta[property="og:title"]') &&
           document.querySelector('meta[property="og:description"]') &&
           document.querySelector('meta[property="og:image"]')
         );
-      }, { timeout: 40000 }); // Increase timeout to 40 seconds
-      await req.prerender.page.waitForNetworkIdle({ idleTime: 1000 });
-      console.log('Meta tags found and network idle');
+      });
+
+      if (metaTagsFound) {
+        console.log('Meta tags found');
+      } else {
+        console.error('Meta tags not found');
+      }
+
       next();
     } catch (err) {
-      console.error('Meta tags not found within 40 seconds:', err);
+      console.error('Error waiting for network idle or checking meta tags:', err);
       next();
     }
   },
