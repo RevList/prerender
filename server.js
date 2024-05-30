@@ -70,19 +70,19 @@ server.use({
 	pageDoneCheck: (req, res) => {
 		return req.prerender.documentReadyState === 'complete' && req.prerender.page.evaluate(() => window.prerenderReady);
 	  },
-	beforeSend: (req, res, next) => {
-	  if (!req.prerender.document) {
-		console.error('Document is not defined in beforeSend.');
-		return next();
-	  }
-	  const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
-	  console.log(`Page title: ${title}`);
-	  next();
-	},
-	failedRequest: (req, res, next) => {
-	  console.error(`Request failed: ${req.prerender.url}`);
-	  next();
-	}
+	// beforeSend: (req, res, next) => {
+	//   if (!req.prerender.document) {
+	// 	console.error('Document is not defined in beforeSend.');
+	// 	return next();
+	//   }
+	//   const title = req.prerender.document.querySelector('title') ? req.prerender.document.querySelector('title').textContent : 'No title found';
+	//   console.log(`Page title: ${title}`);
+	//   next();
+	// },
+	// failedRequest: (req, res, next) => {
+	//   console.error(`Request failed: ${req.prerender.url}`);
+	//   next();
+	// }
   });
 
 server.start();
