@@ -33,11 +33,11 @@ const redisClient = redis.createClient({
 redisClient.on('connect', () => {
   console.log('Connected to Redis');
   // Clear the Redis cache on server start
-  redisClient.flushdb((err, succeeded) => {
-    if (err) {
-      console.error('Failed to clear Redis cache:', err);
+  redisClient.flushall((err, succeeded) => {
+    if (succeeded) {
+		console.log('Redis cache cleared:', succeeded);
     } else {
-      console.log('Redis cache cleared:', succeeded);
+		console.error('Failed to clear Redis cache:', err);
     }
   });
 });
