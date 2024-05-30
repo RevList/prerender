@@ -1,6 +1,8 @@
 var prerender = require('./lib');
 const redisCache = require('prerender-redis-cache');
 const redis = require('redis');
+const cron = require('node-cron');
+const { spawn } = require('child_process');
 
 const options = {
 	pageDoneCheckInterval : 500,
@@ -60,3 +62,8 @@ server.use({
   });
 
 server.start();
+
+cron.schedule('*/10 * * * *', () => {
+	console.log('Restarting server to refresh Chrome instance...');
+	process.exit(0); // Exit the process to trigger a restart
+});
