@@ -11,6 +11,7 @@ const options = {
 		'--headless', 
 		'--disable-gpu', 
 		'--remote-debugging-port=9222', 
+		'--disable-dev-shm-usage',
 		'--hide-scrollbars',
 		'--disable-software-rasterizer',
     	'--disable-web-security',
