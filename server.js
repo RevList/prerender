@@ -32,6 +32,21 @@ const redisClient = redis.createClient({
 
 server.use(redisCache);
 
+// Middleware to ignore specific URLs
+server.use({
+	requestReceived: (req, res, next) => {
+	  const url = req.url.toLowerCase();
+	  if (url.startsWith('/app/')) {
+		console.log(`Ignoring URL: ${req.url}`);
+		res.sendStatus(404); // Or any other appropriate status code
+	  } else {
+		next();
+	  }
+	}
+  });
+
+
+
 server.use(prerender.sendPrerenderHeader());
 server.use(prerender.browserForceRestart());
 server.use(prerender.removeScriptTags());
