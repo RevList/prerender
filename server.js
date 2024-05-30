@@ -7,7 +7,7 @@ const options = {
 	pageLoadTimeout: 20000,
 	waitAfterLastRequest: 250,
 	jsTimeout: 20000,
-	iterations: 40,
+	iterations: 20,
 	chromeFlags: [ 
 		'--no-sandbox', 
 		'--headless', 
