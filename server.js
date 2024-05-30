@@ -1,4 +1,6 @@
 var prerender = require('./lib');
+const redisCache = require('prerender-redis-cache');
+const redis = require('redis');
 
 const options = {
 	pageDoneCheckInterval : 500,
@@ -22,8 +24,30 @@ console.log('Starting with options:', options);
 
 const server = prerender(options);
 
-// server.use(require('prerender-redis-cache'));
-// server.use(prerender.blockResources());
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisClient = redis.createClient({
+  url: redisUrl
+});
+
+// Check Redis connection and clear cache on start
+redisClient.on('connect', () => {
+  console.log('Connected to Redis');
+  // Clear the Redis cache on server start
+  redisClient.flushdb((err, succeeded) => {
+    if (err) {
+      console.error('Failed to clear Redis cache:', err);
+    } else {
+      console.log('Redis cache cleared:', succeeded);
+    }
+  });
+});
+
+redisClient.on('error', (err) => {
+  console.error('Redis connection error:', err);
+});
+
+server.use(redisCache);
+
 server.use(prerender.sendPrerenderHeader());
 server.use(prerender.browserForceRestart());
 server.use(prerender.removeScriptTags());
