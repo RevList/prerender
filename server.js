@@ -53,9 +53,6 @@ server.use(prerender.browserForceRestart());
 server.use(prerender.removeScriptTags());
 server.use(prerender.httpHeaders());
 server.use(prerender.addMetaTags());
-if (process.env.DEBUG_PAGES) {
-	server.use(prerender.logger());
-}
 
 // server.use({
 // 	pageLoaded: async (req, res, next) => {
