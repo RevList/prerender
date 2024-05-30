@@ -1,28 +1,37 @@
-FROM node:8.9
+FROM node:14
 
-EXPOSE 3000
+# Install dependencies
+RUN apt-get update && apt-get install -y wget gnupg
 
-# Install dumb-init to rape any Chrome zombies
-# RUN wget https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb
-# RUN dpkg -i dumb-init_*.deb
+# Install Chrome dependencies
+RUN apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    hicolor-icon-theme \
+    libcanberra-gtk* \
+    libgl1-mesa-dri \
+    libgl1-mesa-glx \
+    libpango1.0-0 \
+    libpulse0 \
+    libv4l-0 \
+    fonts-symbola \
+    --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Chromium.
-RUN \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
-    apt-get update && \
-    apt-get install -y google-chrome-stable && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /usr/src/app && \
-    RUN groupadd -r prerender && useradd -r -g prerender -d /usr/src/app prerender
-RUN chown prerender:prerender /usr/src/app
+# Install Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+RUN apt-get update && apt-get install -y google-chrome-stable
 
 WORKDIR /usr/src/app
 
-COPY package.json /usr/src/app/
+COPY package*.json ./
 RUN npm install
-COPY . /usr/src/app
 
-CMD [ "npm", "start"]
+COPY . .
+
+EXPOSE 3000
+CMD ["npm", "start"]
