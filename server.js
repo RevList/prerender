@@ -8,7 +8,16 @@ const options = {
 	pageDoneCheckInterval : 500,
 	pageLoadTimeout: 20000,
 	waitAfterLastRequest: 250,
-	chromeFlags: [ '--no-sandbox', '--headless', '--disable-gpu', '--remote-debugging-port=9222', '--hide-scrollbars' ],
+	chromeFlags: [ 
+		'--no-sandbox', 
+		'--headless', 
+		'--disable-gpu', 
+		'--remote-debugging-port=9222', 
+		'--hide-scrollbars',
+		'--disable-software-rasterizer',
+    	'--disable-web-security',
+    	'--disable-features=IsolateOrigins,site-per-process' // Disabling web security and origin isolation 
+	],
 };
 console.log('Starting with options:', options);
 
