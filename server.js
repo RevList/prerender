@@ -8,6 +8,7 @@ const options = {
 	waitAfterLastRequest: 250,
 	jsTimeout: 20000,
 	iterations: 20,
+	restart: true,
 	chromeFlags: [ 
 		'--no-sandbox', 
 		'--headless', 
