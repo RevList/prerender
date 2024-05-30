@@ -22,7 +22,9 @@ console.log('Starting with options:', options);
 const server = prerender(options);
 
 // server.use(require('prerender-redis-cache'));
-server.use(prerender.blockResources());
+// server.use(prerender.blockResources());
+server.use(prerender.sendPrerenderHeader());
+server.use(prerender.browserForceRestart());
 server.use(prerender.removeScriptTags());
 server.use(prerender.httpHeaders());
 server.use(prerender.addMetaTags());
