@@ -63,7 +63,7 @@ server.use({
 
 server.start();
 
-cron.schedule('*/10 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
 	console.log('Restarting server to refresh Chrome instance...');
 	process.exit(0); // Exit the process to trigger a restart
 });
