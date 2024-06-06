@@ -23,7 +23,7 @@ const options = {
     	'--disable-features=IsolateOrigins,site-per-process' // Disabling web security and origin isolation 
 	],
 };
-console.log('Starting with options:', options);
+// console.log('Starting with options:', options);
 
 const server = prerender(options);
 
@@ -39,7 +39,7 @@ server.use({
 	requestReceived: (req, res, next) => {
 	  const url = req.url.toLowerCase();
 	  if (url.startsWith('/app/')) {
-		console.log(`Ignoring URL: ${req.url}`);
+		// console.log(`Ignoring URL: ${req.url}`);
 		res.sendStatus(404); // Or any other appropriate status code
 	  } else {
 		next();
@@ -64,6 +64,6 @@ server.use({
 server.start();
 
 cron.schedule('*/5 * * * *', () => {
-	console.log('Restarting server to refresh Chrome instance...');
+	// console.log('Restarting server to refresh Chrome instance...');
 	process.exit(0); // Exit the process to trigger a restart
 });
