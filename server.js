@@ -4,59 +4,93 @@ const redis = require('redis');
 const cron = require('node-cron');
 const { spawn } = require('child_process');
 
+// Configuration options for the Prerender server
 const options = {
-	pageDoneCheckInterval: 500,
-	pageLoadTimeout: 40000, // Increased to 40 seconds
-	waitAfterLastRequest: 250,
-	jsTimeout: 40000, // Increased to 40 seconds
-	iterations: 50, // Increased to handle more requests before restarting
-	restart: true,
-	chromeFlags: [
-		'--no-sandbox',
-		'--headless',
-		'--disable-gpu',
-		'--remote-debugging-port=9222',
-		'--disable-dev-shm-usage',
-		'--hide-scrollbars',
-		'--disable-software-rasterizer',
-		'--disable-web-security',
-		'--disable-features=IsolateOrigins,site-per-process', // Disabling web security and origin isolation
-	],
+    pageDoneCheckInterval: 500,
+    pageLoadTimeout: 60000, // Increased to 60 seconds
+    waitAfterLastRequest: 500,
+    jsTimeout: 60000, // Increased to 60 seconds
+    iterations: 50, // Increased to handle more requests before restarting
+    restart: true,
+    chromeFlags: [
+        '--no-sandbox',
+        '--headless',
+        '--disable-gpu',
+        '--remote-debugging-port=9222',
+        '--disable-dev-shm-usage',
+        '--hide-scrollbars',
+        '--disable-software-rasterizer',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-extensions',
+        '--disable-translate',
+        '--disable-sync',
+    ],
 };
-// console.log('Starting with options:', options);
 
+// Start the Prerender server with configured options
 const server = prerender(options);
 
+// Configure Redis client
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisClient = redis.createClient({
-	url: redisUrl,
-	retry_strategy: function (options) {
-		if (options.error && options.error.code === 'ECONNREFUSED') {
-			return new Error('The server refused the connection');
-		}
-		if (options.total_retry_time > 1000 * 60 * 60) {
-			return new Error('Retry time exhausted');
-		}
-		if (options.attempt > 10) {
-			return undefined;
-		}
-		return Math.min(options.attempt * 100, 3000); // Retry logic for Redis connection
-	},
+    url: redisUrl,
+    retry_strategy: function (options) {
+        if (options.error) {
+            console.error('Redis Error:', options.error);
+        }
+        if (options.total_retry_time > 1000 * 60 * 10) { // Retry for up to 10 minutes
+            return new Error('Retry time exhausted');
+        }
+        if (options.attempt > 5) {
+            console.warn('Max Redis connection attempts reached.');
+            return undefined;
+        }
+        return Math.min(options.attempt * 200, 3000);
+    },
 });
 
+redisClient.on('error', (err) => {
+    console.error(`Redis Error: ${err}`);
+});
+
+// Use Redis cache middleware
 server.use(redisCache);
+
+// Middleware to log requests
+server.use({
+    requestReceived: (req, res, next) => {
+        console.log(`Request received for: ${req.url}`);
+        server.isChromeAlive()
+            .then(isAlive => {
+                if (!isAlive) {
+                    console.warn('Chrome is down, restarting...');
+                    restartChrome();
+                }
+                next();
+            })
+            .catch(err => {
+                console.error('Error checking Chrome status:', err);
+                restartChrome();
+                next();
+            });
+    }
+});
 
 // Middleware to ignore specific URLs
 server.use({
-	requestReceived: (req, res, next) => {
-		const url = req.url.toLowerCase();
-		if (url.startsWith('/app/')) {
-			// console.log(`Ignoring URL: ${req.url}`);
-			res.sendStatus(404); // Or any other appropriate status code
-		} else {
-			next();
-		}
-	}
+    requestReceived: (req, res, next) => {
+        const url = req.url.toLowerCase();
+        if (url.startsWith('/app/')) {
+            console.log(`Ignoring URL: ${req.url}`);
+            res.sendStatus(404); // Or any other appropriate status code
+        } else {
+            next();
+        }
+    }
 });
 
 server.use(prerender.sendPrerenderHeader());
@@ -65,29 +99,49 @@ server.use(prerender.removeScriptTags());
 server.use(prerender.httpHeaders());
 server.use(prerender.addMetaTags());
 
+// Improved pageDoneCheck to ensure complete page rendering
 server.use({
-	pageDoneCheck: (req, res) => {
-		return req.prerender.documentReadyState === 'complete' && req.prerender.page.evaluate(() => window.prerenderReady);
-	}
+    pageDoneCheck: (req, res) => {
+        return req.prerender.documentReadyState === 'complete' &&
+               req.prerender.page.evaluate(() => window.prerenderReady || document.querySelectorAll('img, script, link[rel="stylesheet"]').length > 0);
+    }
+});
+
+// Middleware to handle caching and logging before sending to Redis
+server.use({
+    beforeSend: (req, res, next) => {
+        req.prerender.cacheKey = `prerender:${req.url}`;
+        console.log(`Caching URL: ${req.url} with key: ${req.prerender.cacheKey}`);
+        next();
+    }
+});
+
+// Error handling middleware
+server.onError((req, res, err) => {
+    console.error(`Error occurred for URL: ${req.url}. Error: ${err}`);
+    res.sendStatus(500); // Send a 500 status code on failure
 });
 
 // Start the Prerender server
 server.start();
 
 const restartChrome = () => {
-	server.killChrome();
-	server.spawnChrome();
+    server.killChrome();
+    console.log('Chrome instance killed, spawning new instance...');
+    server.spawnChrome();
 };
 
-// Cron job to restart Chrome instance every 5 minutes
+// Cron job to restart Chrome instance every 5 minutes if not alive
 cron.schedule('*/5 * * * *', () => {
-	server.isChromeAlive()
-		.then(isAlive => {
-			if (!isAlive) {
-				restartChrome(); // Restart Chrome if it's not alive
-			}
-		})
-		.catch(() => {
-			restartChrome(); // Restart Chrome if there are errors
-		});
+    server.isChromeAlive()
+        .then(isAlive => {
+            if (!isAlive) {
+                console.warn('Chrome not alive, restarting...');
+                restartChrome();
+            }
+        })
+        .catch(() => {
+            console.error('Error checking Chrome status, restarting...');
+            restartChrome();
+        });
 });
