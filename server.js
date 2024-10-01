@@ -116,10 +116,12 @@ server.use({
     }
 });
 
-// Error handling middleware
-server.onError((req, res, err) => {
-    console.error(`Error occurred for URL: ${req.url}. Error: ${err}`);
-    res.sendStatus(500); // Send a 500 status code on failure
+// Error handling middleware using `pageError` hook
+server.use({
+    pageError: (req, res, next) => {
+        console.error(`Page error occurred for URL: ${req.url}. Error: ${req.prerender.error}`);
+        res.sendStatus(500); // Send a 500 status code on failure
+    }
 });
 
 // Start the Prerender server
