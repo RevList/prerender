@@ -2,7 +2,7 @@ var prerender = require('./lib');
 const redisCache = require('prerender-redis-cache');
 const redis = require('redis');
 const cron = require('node-cron');
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 
 // Configuration options for the Prerender server
 const options = {
@@ -60,11 +60,11 @@ redisClient.on('error', (err) => {
 // Use Redis cache middleware
 server.use(redisCache);
 
-// Middleware to log requests
+// Middleware to log requests and check Chrome status
 server.use({
     requestReceived: (req, res, next) => {
         console.log(`Request received for: ${req.url}`);
-        server.isChromeAlive()
+        checkChromeAlive()
             .then(isAlive => {
                 if (!isAlive) {
                     console.warn('Chrome is down, restarting...');
@@ -116,7 +116,7 @@ server.use({
     }
 });
 
-// Error handling middleware using `pageError` hook
+// Error handling middleware for page errors
 server.use({
     pageError: (req, res, next) => {
         console.error(`Page error occurred for URL: ${req.url}. Error: ${req.prerender.error}`);
@@ -127,15 +127,29 @@ server.use({
 // Start the Prerender server
 server.start();
 
+// Function to restart Chrome instance
 const restartChrome = () => {
     server.killChrome();
     console.log('Chrome instance killed, spawning new instance...');
     server.spawnChrome();
 };
 
+// Custom function to check if Chrome is running
+const checkChromeAlive = () => {
+    return new Promise((resolve) => {
+        exec('pgrep -fl chrome', (err, stdout, stderr) => {
+            if (err) {
+                console.error('Error checking Chrome status:', stderr);
+                resolve(false);
+            }
+            resolve(stdout.includes('chrome'));
+        });
+    });
+};
+
 // Cron job to restart Chrome instance every 5 minutes if not alive
 cron.schedule('*/5 * * * *', () => {
-    server.isChromeAlive()
+    checkChromeAlive()
         .then(isAlive => {
             if (!isAlive) {
                 console.warn('Chrome not alive, restarting...');
