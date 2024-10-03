@@ -23,9 +23,9 @@ const options = {
         '--disable-software-rasterizer',
         '--disable-web-security',
         '--disable-features=IsolateOrigins,site-per-process',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows',
+        // '--disable-background-timer-throttling',
+        // '--disable-renderer-backgrounding',
+        // '--disable-backgrounding-occluded-windows',
         '--disable-extensions',
         '--disable-translate',
         '--disable-sync',
@@ -120,6 +120,11 @@ server.use({
 server.use({
     beforeSend: async (req, res, next) => {
         try {
+            if (!req.prerender.page) {
+                console.error(`Page object is not defined for ${req.url}`);
+                req.prerender.cache = false; // Skip caching
+                return next();
+            }
             const prerenderReady = await req.prerender.page.evaluate(() => window.prerenderReady);
             const statusCode = req.prerender.statusCode;
             if (!prerenderReady) {
