@@ -1,6 +1,6 @@
 var prerender = require('./lib');
-const redisCache = require('prerender-redis-cache');
-const redis = require('redis');
+// const redisCache = require('prerender-redis-cache');
+// const redis = require('redis');
 const cron = require('node-cron');
 const { exec } = require('child_process');
 
@@ -12,6 +12,7 @@ const options = {
     jsTimeout: 60000, // Increased to 60 seconds
     iterations: 50, // Increased to handle more requests before restarting
     restart: true,
+    port: process.env.PORT || 3000,
     chromeFlags: [
         '--no-sandbox',
         '--headless',
