@@ -102,10 +102,10 @@ server.use(prerender.addMetaTags());
 // Improved pageDoneCheck to ensure complete page rendering
 server.use({
     pageDoneCheck: (req, res) => {
-        return req.prerender.documentReadyState === 'complete' &&
-               req.prerender.page.evaluate(() => window.prerenderReady || document.querySelectorAll('img, script, link[rel="stylesheet"]').length > 0);
+      return req.prerender.documentReadyState === 'complete' &&
+             req.prerender.page.evaluate(() => window.prerenderReady === true);
     }
-});
+  });
 
 // Middleware to handle caching and logging before sending to Redis
 server.use({
@@ -116,18 +116,18 @@ server.use({
     }
 });
 
-// Middleware to skip caching for errors or empty content
 server.use({
     beforeSend: (req, res, next) => {
-        const statusCode = req.prerender.statusCode;
-        const htmlContent = req.prerender.content || '';
-        if (statusCode !== 200 || htmlContent.trim().length === 0) {
-            console.warn(`Skipping Redis cache for ${req.url} due to status code: ${statusCode} or empty content.`);
-            req.prerender.cache = false; // Skip caching
-        }
-        next();
+      const prerenderReady = req.prerender.page.evaluate(() => window.prerenderReady === true);
+      const statusCode = req.prerender.statusCode;
+      if (!prerenderReady) {
+        console.warn(`Skipping Redis cache for ${req.url}: prerenderReady flag is not set.`);
+        req.prerender.cache = false; // Skip caching
+      }
+      console.log(`Sending response for ${req.url} with status ${statusCode}. prerenderReady: ${prerenderReady}`);
+      next();
     }
-});
+  });
 
 // Error handling middleware for page errors
 server.use({
