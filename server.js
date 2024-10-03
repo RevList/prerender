@@ -116,6 +116,19 @@ server.use({
     }
 });
 
+// Middleware to skip caching for errors or empty content
+server.use({
+    beforeSend: (req, res, next) => {
+        const statusCode = req.prerender.statusCode;
+        const htmlContent = req.prerender.content || '';
+        if (statusCode !== 200 || htmlContent.trim().length === 0) {
+            console.warn(`Skipping Redis cache for ${req.url} due to status code: ${statusCode} or empty content.`);
+            req.prerender.cache = false; // Skip caching
+        }
+        next();
+    }
+});
+
 // Error handling middleware for page errors
 server.use({
     pageError: (req, res, next) => {
