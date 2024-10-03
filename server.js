@@ -102,14 +102,18 @@ server.use(prerender.addMetaTags());
 // Improved pageDoneCheck to ensure complete page rendering
 server.use({
     pageDoneCheck: (req, res) => {
-        return req.prerender.documentReadyState === 'complete' &&
-               req.prerender.page.evaluate(() => window.prerenderReady)
-                  .catch(err => {
-                      console.error(`Error in page evaluation for ${req.url}: ${err}`);
-                      return false; // Fallback to ensure no crash
-                  });
+      const startTime = Date.now();
+      const MAX_WAIT_TIME = 60000; // Maximum wait time of 60 seconds
+      const prerenderReady = req.prerender.page.evaluate(() => window.prerenderReady)
+        .catch(err => {
+          console.error(`Error evaluating window.prerenderReady for ${req.url}:`, err);
+          return false;
+        });
+  
+      // Check if window.prerenderReady is set or if maximum wait time has passed
+      return prerenderReady || (Date.now() - startTime > MAX_WAIT_TIME);
     }
-});
+  });
 
 // Middleware to handle caching and logging before sending to Redis
 server.use({
