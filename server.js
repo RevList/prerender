@@ -12,7 +12,6 @@ const options = {
     jsTimeout: 60000, // Increased to 60 seconds
     iterations: 50, // Increased to handle more requests before restarting
     restart: true,
-    port: process.env.PORT || 3000,
     chromeFlags: [
         '--no-sandbox',
         '--headless',
