@@ -102,32 +102,33 @@ server.use(prerender.addMetaTags());
 // Improved pageDoneCheck to ensure complete page rendering
 server.use({
     pageDoneCheck: (req, res) => {
-      return req.prerender.documentReadyState === 'complete' &&
-             req.prerender.page.evaluate(() => window.prerenderReady === true);
-    }
-  });
-
-// Middleware to handle caching and logging before sending to Redis
-server.use({
-    beforeSend: (req, res, next) => {
-        req.prerender.cacheKey = `prerender:${req.url}`;
-        console.log(`Caching URL: ${req.url} with key: ${req.prerender.cacheKey}`);
-        next();
+        return req.prerender.documentReadyState === 'complete' &&
+               req.prerender.page.evaluate(() => window.prerenderReady)
+                  .catch(err => {
+                      console.error(`Error in page evaluation for ${req.url}: ${err}`);
+                      return false; // Fallback to ensure no crash
+                  });
     }
 });
 
+// Middleware to handle caching and logging before sending to Redis
 server.use({
-    beforeSend: (req, res, next) => {
-      const prerenderReady = req.prerender.page.evaluate(() => window.prerenderReady === true);
-      const statusCode = req.prerender.statusCode;
-      if (!prerenderReady) {
-        console.warn(`Skipping Redis cache for ${req.url}: prerenderReady flag is not set.`);
-        req.prerender.cache = false; // Skip caching
-      }
-      console.log(`Sending response for ${req.url} with status ${statusCode}. prerenderReady: ${prerenderReady}`);
-      next();
+    beforeSend: async (req, res, next) => {
+        try {
+            const prerenderReady = await req.prerender.page.evaluate(() => window.prerenderReady);
+            const statusCode = req.prerender.statusCode;
+            if (!prerenderReady) {
+                console.warn(`Skipping Redis cache for ${req.url}: prerenderReady flag is not set.`);
+                req.prerender.cache = false; // Skip caching
+            }
+            console.log(`Sending response for ${req.url} with status ${statusCode}. prerenderReady: ${prerenderReady}`);
+        } catch (err) {
+            console.error(`Error during prerenderReady evaluation for ${req.url}: ${err}`);
+            req.prerender.cache = false; // Skip caching on error
+        }
+        next();
     }
-  });
+});
 
 // Error handling middleware for page errors
 server.use({
