@@ -1,6 +1,6 @@
 var prerender = require('./lib');
-// const redisCache = require('prerender-redis-cache');
-// const redis = require('redis');
+const redisCache = require('prerender-redis-cache');
+const redis = require('redis');
 const cron = require('node-cron');
 const { exec } = require('child_process');
 
