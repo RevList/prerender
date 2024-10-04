@@ -171,7 +171,7 @@ const checkChromeAlive = () => {
 };
 
 // Cron job to restart Chrome instance every 5 minutes if not alive
-cron.schedule('*/5 * * * *', () => {
+cron.schedule('*/1 * * * *', () => {
     checkChromeAlive()
         .then(isAlive => {
             if (!isAlive) {
