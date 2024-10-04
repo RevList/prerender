@@ -1,4 +1,4 @@
-var prerender = require('./lib');
+const prerender = require('./lib');
 const redisCache = require('prerender-redis-cache');
 const redis = require('redis');
 const cron = require('node-cron');
@@ -6,11 +6,11 @@ const { exec } = require('child_process');
 
 // Configuration options for the Prerender server
 const options = {
-    pageDoneCheckInterval: 500,
-    pageLoadTimeout: 60000, // Increased to 60 seconds
-    waitAfterLastRequest: 500,
-    jsTimeout: 60000, // Increased to 60 seconds
-    iterations: 50, // Increased to handle more requests before restarting
+    pageDoneCheckInterval: 100, // Lower interval to check page status more frequently
+    pageLoadTimeout: 30000,     // Reduce to 30 seconds to trigger faster resets
+    waitAfterLastRequest: 100,  // Shorten the wait after last request
+    jsTimeout: 30000,           // Reduce to 30 seconds for JavaScript timeout
+    iterations: 30,             // Lower iterations to restart more frequently
     restart: true,
     chromeFlags: [
         '--no-sandbox',
@@ -22,12 +22,14 @@ const options = {
         '--disable-software-rasterizer',
         '--disable-web-security',
         '--disable-features=IsolateOrigins,site-per-process',
-        // '--disable-background-timer-throttling',
-        // '--disable-renderer-backgrounding',
-        // '--disable-backgrounding-occluded-windows',
         '--disable-extensions',
         '--disable-translate',
         '--disable-sync',
+        '--single-process',
+        '--disable-crash-reporter',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows',
     ],
 };
 
@@ -42,7 +44,7 @@ const redisClient = redis.createClient({
         if (options.error) {
             console.error('Redis Error:', options.error);
         }
-        if (options.total_retry_time > 1000 * 60 * 10) { // Retry for up to 10 minutes
+        if (options.total_retry_time > 1000 * 60 * 10) {
             return new Error('Retry time exhausted');
         }
         if (options.attempt > 5) {
@@ -80,40 +82,32 @@ server.use({
     }
 });
 
-// Middleware to ignore specific URLs
+// Improved pageDoneCheck to ensure complete page rendering
 server.use({
-    requestReceived: (req, res, next) => {
-        const url = req.url.toLowerCase();
-        if (url.startsWith('/app/')) {
-            console.log(`Ignoring URL: ${req.url}`);
-            res.sendStatus(404); // Or any other appropriate status code
-        } else {
-            next();
+    pageDoneCheck: async (req, res) => {
+        try {
+            const startTime = Date.now();
+            const MAX_WAIT_TIME = 30000; // Reduced to 30 seconds
+            const prerenderReady = await req.prerender.page.evaluate(() => window.prerenderReady)
+                .catch(err => {
+                    console.error(`Error evaluating window.prerenderReady for ${req.url}:`, err);
+                    return false;
+                });
+
+            // Check if window.prerenderReady is set or if maximum wait time has passed
+            const done = prerenderReady || (Date.now() - startTime > MAX_WAIT_TIME);
+
+            if (!done) {
+                console.warn(`Page is not fully rendered for ${req.url}.`);
+            }
+
+            return done;
+        } catch (err) {
+            console.error(`Error in pageDoneCheck for ${req.url}:`, err);
+            return true;  // Assume done on error to avoid hanging
         }
     }
 });
-
-server.use(prerender.sendPrerenderHeader());
-// server.use(prerender.browserForceRestart());
-server.use(prerender.removeScriptTags());
-server.use(prerender.httpHeaders());
-server.use(prerender.addMetaTags());
-
-// Improved pageDoneCheck to ensure complete page rendering
-server.use({
-    pageDoneCheck: (req, res) => {
-      const startTime = Date.now();
-      const MAX_WAIT_TIME = 60000; // Maximum wait time of 60 seconds
-      const prerenderReady = req.prerender.page.evaluate(() => window.prerenderReady)
-        .catch(err => {
-          console.error(`Error evaluating window.prerenderReady for ${req.url}:`, err);
-          return false;
-        });
-  
-      // Check if window.prerenderReady is set or if maximum wait time has passed
-      return prerenderReady || (Date.now() - startTime > MAX_WAIT_TIME);
-    }
-  });
 
 // Middleware to handle caching and logging before sending to Redis
 server.use({
