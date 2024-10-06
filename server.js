@@ -7,27 +7,25 @@ const { exec } = require('child_process');
 // Configuration options for the Prerender server
 const options = {
     pageDoneCheckInterval: 500,
-    pageLoadTimeout: 60000, // Increased to 60 seconds
+    pageLoadTimeout: 30000, // Increased to 60 seconds
     waitAfterLastRequest: 500,
-    jsTimeout: 60000, // Increased to 60 seconds
-    iterations: 50, // Increased to handle more requests before restarting
-    restart: true,
+    jsTimeout: 30000, // Increased to 60 seconds
+    iterations: 30, // Increased to handle more requests before restarting
+    restart: false,
     chromeFlags: [
-        '--no-sandbox',
         '--headless',
+        '--no-sandbox',
         '--disable-gpu',
-        '--remote-debugging-port=9222',
-        '--disable-dev-shm-usage',
-        '--hide-scrollbars',
         '--disable-software-rasterizer',
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process',
-        // '--disable-background-timer-throttling',
-        // '--disable-renderer-backgrounding',
-        // '--disable-backgrounding-occluded-windows',
+        '--disable-dev-shm-usage',
+        '--remote-debugging-port=9222',
         '--disable-extensions',
-        '--disable-translate',
+        '--disable-web-security',
         '--disable-sync',
+        '--disable-translate',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows'
     ],
 };
 
@@ -157,6 +155,11 @@ const restartChrome = () => {
     server.spawnChrome();
 };
 
+const restartServer = () => {
+    console.log('Restarting the entire server process...');
+    process.exit(1); // Exit the process to let the orchestrator handle the restart.
+};
+
 // Custom function to check if Chrome is running
 const checkChromeAlive = () => {
     return new Promise((resolve) => {
@@ -171,16 +174,16 @@ const checkChromeAlive = () => {
 };
 
 // Cron job to restart Chrome instance every 5 minutes if not alive
-cron.schedule('*/1 * * * *', () => {
+cron.schedule('*/2 * * * *', () => {
     checkChromeAlive()
         .then(isAlive => {
             if (!isAlive) {
                 console.warn('Chrome not alive, restarting...');
-                restartChrome();
+                restartServer();
             }
         })
         .catch(() => {
             console.error('Error checking Chrome status, restarting...');
-            restartChrome();
+            restartServer();
         });
 });
